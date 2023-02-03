@@ -184,6 +184,40 @@ impl GrpphatiRsColumn {
             ColumnType::Node(_) => vec![],
         }
     }
+
+    fn to_grpphati_column(&self) -> PyObject {
+        //TODO: Do I need to obtain GIL?
+        Python::with_gil(|py| {
+            let columns = py.import("grpphati.columns").unwrap();
+            match self.col_type {
+                ColumnType::DoubleEdge(i, j) => {
+                    let col_cls = columns.getattr("DoubleEdgeCol").unwrap();
+                    let args = ((i, j), self.entrance_time);
+                    col_cls.call1(args).unwrap().into_py(py)
+                }
+                ColumnType::Triangle(i, j, k) => {
+                    let col_cls = columns.getattr("DirectedTriangleCol").unwrap();
+                    let args = ((i, j, k), self.entrance_time);
+                    col_cls.call1(args).unwrap().into_py(py)
+                }
+                ColumnType::LongSquare(i, midpoints, j) => {
+                    let col_cls = columns.getattr("LongSquareCol").unwrap();
+                    let args = (i, midpoints, j, self.entrance_time);
+                    col_cls.call1(args).unwrap().into_py(py)
+                }
+                ColumnType::Edge(i, j) => {
+                    let col_cls = columns.getattr("EdgeCol").unwrap();
+                    let args = ((i, j), self.entrance_time);
+                    col_cls.call1(args).unwrap().into_py(py)
+                }
+                ColumnType::Node(i) => {
+                    let col_cls = columns.getattr("NodeCol").unwrap();
+                    let args = (i, self.entrance_time);
+                    col_cls.call1(args).unwrap().into_py(py)
+                }
+            }
+        })
+    }
 }
 
 #[pyclass]
