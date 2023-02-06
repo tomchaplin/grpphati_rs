@@ -24,7 +24,7 @@ struct TwoPathWithTime {
 }
 
 // TODO: This would be better implemented as a trait, does this play well with PyO3?
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 enum ColumnType {
     DoubleEdge(NodeIndex, NodeIndex),          // (i,j) where i → j → i
     Triangle(NodeIndex, NodeIndex, NodeIndex), // (i, j, k) where i → j → k, i → k
@@ -248,6 +248,38 @@ impl RustListSparsifier {
     }
 }
 
+#[pyclass]
+struct RustIteratorSparsifier {
+    col2idx_map: HashMap<ColumnType, usize>,
+    current_idx: usize,
+    cols: std::vec::IntoIter<GrpphatiRsColumn>,
+}
+
+#[pymethods]
+impl RustIteratorSparsifier {
+    #[new]
+    fn new(cols: Vec<GrpphatiRsColumn>) -> Self {
+        Self {
+            col2idx_map: HashMap::new(),
+            current_idx: 0,
+            cols: cols.into_iter(),
+        }
+    }
+    fn get_next(&mut self) -> Option<(usize, Vec<usize>)> {
+        let col = self.cols.next()?;
+        let bdry = col.boundary();
+        let mut sparse_bdry = vec![];
+        for row in bdry {
+            let idx = self.col2idx_map.get(&row.col_type).unwrap();
+            sparse_bdry.push(*idx);
+        }
+        sparse_bdry.sort();
+        self.col2idx_map.insert(col.col_type, self.current_idx);
+        self.current_idx += 1;
+        Some((col.dimension(), sparse_bdry))
+    }
+}
+
 #[derive(Default)]
 struct TwoPathFold {
     // Columns that are ready to be put in the basis
@@ -406,5 +438,6 @@ fn grpphati_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_rph_two_cells, m)?)?;
     m.add_class::<GrpphatiRsColumn>()?;
     m.add_class::<RustListSparsifier>()?;
+    m.add_class::<RustIteratorSparsifier>()?;
     Ok(())
 }

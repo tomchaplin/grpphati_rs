@@ -3,7 +3,7 @@ import random
 import networkx as nx
 import numpy as np
 from math import log
-from grpphati_rs import RustRegularPathHomology
+from grpphati_rs import RustRegularPathHomology, RustGeneratorSparsifier
 from grpphati_rs.grpphati_rs import RustListSparsifier
 from grpphati.homologies import RegularPathHomology
 from grpphati.backends import PHATBackend, PersuitBackend
@@ -26,35 +26,39 @@ def _non_trivial_dict(sp_iter):
     }
 
 
-log_deltas = []
-
-N = 150
-G = nx.DiGraph()
-for i in range(N):
-    G.add_node(i)
-for i in range(N):
-    G.add_edge(i, (i + 1) % N, weight=random.random())
-
-pipeline = make_grounded_pipeline(
+# log_deltas = []
+#
+# N = 150
+# G = nx.DiGraph()
+# for i in range(N):
+#     G.add_node(i)
+# for i in range(N):
+#     G.add_edge(i, (i + 1) % N, weight=random.random())
+#
+best_pipeline = make_grounded_pipeline(
     ShortestPathFiltration,
     RustRegularPathHomology,
-    backend=PHATBackend(sparsifier=ListSparsifier(return_dimension=True)),
+    backend=PersuitBackend(sparsifier=RustGeneratorSparsifier(return_dimension=False)),
     optimisation_strat=None,
 )
 
 old_pipeline = make_grounded_pipeline(
     ShortestPathFiltration,
     RegularPathHomology,
-    backend=PHATBackend(sparsifier=ListSparsifier(return_dimension=True)),
+    backend=PersuitBackend(sparsifier=GeneratorSparsifier(return_dimension=False)),
     optimisation_strat=None,
 )
+from data.paul_analysis import assemble_dash_data
 
-third_pipeline = make_grounded_pipeline(
-    ShortestPathFiltration,
-    RustRegularPathHomology,
-    backend=PHATBackend(sparsifier=RustListSparsifier()),
-    optimisation_strat=None,
-)
+tic0 = time.time()
+d2 = assemble_dash_data(data_root="./data/all", pipeline=old_pipeline)
+print("Done")
+tic1 = time.time()
+d0 = assemble_dash_data(data_root="./data/all", pipeline=best_pipeline)
+print("Done")
+tic2 = time.time()
+print(tic1 - tic0)
+print(tic2 - tic1)
 
 # cells1 = RustRegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))
 # cells2 = RegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))
@@ -77,9 +81,9 @@ third_pipeline = make_grounded_pipeline(
 ##
 ## tic3 = time.time()
 
-print("Start")
-res3 = third_pipeline(G)
-print("End")
+## print("Start")
+## res3 = third_pipeline(G)
+## print("End")
 
 ##  tic4 = time.time()
 ##
