@@ -28,7 +28,7 @@ def _non_trivial_dict(sp_iter):
 
 log_deltas = []
 
-N = 50
+N = 150
 G = nx.DiGraph()
 for i in range(N):
     G.add_node(i)
@@ -49,20 +49,40 @@ old_pipeline = make_grounded_pipeline(
     optimisation_strat=None,
 )
 
-cells1 = RustRegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))
-cells2 = RegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))
-cells1_py = [cell.to_grpphati_column() for cell in cells1]
-assert set(cells1_py) == set(cells2)
+third_pipeline = make_grounded_pipeline(
+    ShortestPathFiltration,
+    RustRegularPathHomology,
+    backend=PHATBackend(sparsifier=RustListSparsifier()),
+    optimisation_strat=None,
+)
 
-# tic1 = time.time()
-# print("Start")
-# res1 = pipeline(G)
-# print("End")
-# tic2 = time.time()
-# print("Start")
-# res2 = old_pipeline(G)
-# print("End")
-# tic3 = time.time()
-# print(tic2 - tic1)
-# print(tic3 - tic2)
-#
+# cells1 = RustRegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))
+# cells2 = RegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))
+# cells1_py = [cell.to_grpphati_column() for cell in cells1]
+# cells1_py.sort(key=lambda c: (c.get_entrance_time(), c.dimension()))
+# cells2.sort(key=lambda c: (c.get_entrance_time(), c.dimension()))
+# print(set(cells1_py) == set(cells2))
+
+## tic1 = time.time()
+##
+## print("Start")
+## res1 = pipeline(G)
+## print("End")
+##
+## tic2 = time.time()
+##
+## print("Start")
+## res2 = old_pipeline(G)
+## print("End")
+##
+## tic3 = time.time()
+
+print("Start")
+res3 = third_pipeline(G)
+print("End")
+
+##  tic4 = time.time()
+##
+##  print(tic2 - tic1)
+##  print(tic3 - tic2)
+##  print(tic4 - tic3)

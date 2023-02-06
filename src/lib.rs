@@ -44,9 +44,8 @@ impl TryFrom<TwoPathType> for ColumnType {
     }
 }
 
-// TODO: Implement these columns as a grpphati.Column
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct GrpphatiRsColumn {
     col_type: ColumnType,
     entrance_time: Option<FiltrationTime>,
@@ -263,12 +262,19 @@ fn get_rph_two_cells(edge_map: EdgeMap) -> Vec<GrpphatiRsColumn> {
     let two_path_iter = enumerate_two_paths(&edge_map);
     let mut two_path_fold = split_off_bridges(&edge_map, two_path_iter);
     // Add columns arising from bridges
-    let bridge_cols = two_path_fold
+    let sorted_bridges = two_path_fold
         .bridges
         .into_iter()
         .par_bridge()
-        .flat_map(|(endpoints, bridges)| build_bridge_columns(&edge_map, endpoints, bridges));
-    two_path_fold.cols.par_extend(bridge_cols);
+        .map(|(endpoints, bridges)| (endpoints, sort_bridges(bridges)));
+    // TODO: Make this neater and in paralell?
+    let bridge_cols = sorted_bridges
+        .map(|(endpoints, bridges)| build_bridge_columns(&edge_map, endpoints, bridges));
+    let (long_square_cols, triangle_cols): (Vec<_>, Vec<_>) = bridge_cols.unzip();
+    let long_square_cols: Vec<_> = long_square_cols.into_iter().flatten().collect();
+    let triangle_cols: Vec<_> = triangle_cols.into_iter().flatten().collect();
+    two_path_fold.cols.extend(triangle_cols);
+    two_path_fold.cols.extend(long_square_cols);
     println!("Computed cells");
     two_path_fold.cols
 }
@@ -360,28 +366,31 @@ fn split_off_bridges(
     reduced
 }
 
+fn sort_bridges(mut bridges: Vec<(NodeIndex, FiltrationTime)>) -> Vec<(NodeIndex, FiltrationTime)> {
+    bridges.sort_by(|b1, b2| b1.1.partial_cmp(&b2.1).unwrap());
+    bridges
+}
+
 fn build_bridge_columns(
     edge_map: &EdgeMap,
     endpoints: (NodeIndex, NodeIndex),
-    mut bridges: Vec<(NodeIndex, FiltrationTime)>,
-) -> Vec<GrpphatiRsColumn> {
-    // Sort bridges by filtration time
-    bridges.sort_by(|b1, b2| b1.1.partial_cmp(&b2.1).unwrap());
+    bridges: Vec<(NodeIndex, FiltrationTime)>,
+) -> (Vec<GrpphatiRsColumn>, Vec<GrpphatiRsColumn>) {
     let mut bridge_iter = bridges.into_iter();
     let first_bridge = bridge_iter.next().expect("Found empty bridge vector");
-    // First add the collapsing directed triangle
     let collapse_time = edge_time(edge_map, (&endpoints.0, &endpoints.1));
-    let mut columns = vec![GrpphatiRsColumn {
+    let collapsing_col = GrpphatiRsColumn {
         col_type: ColumnType::Triangle(endpoints.0, first_bridge.0, endpoints.1),
         entrance_time: Some(collapse_time),
-    }];
+    };
+    let mut ls_columns = vec![];
     for (bridge, time) in bridge_iter {
-        columns.push(GrpphatiRsColumn {
+        ls_columns.push(GrpphatiRsColumn {
             col_type: ColumnType::LongSquare(endpoints.0, (first_bridge.0, bridge), endpoints.1),
             entrance_time: Some(time),
         })
     }
-    columns
+    (ls_columns, vec![collapsing_col])
 }
 
 fn edge_time(edge_map: &EdgeMap, edge: (&NodeIndex, &NodeIndex)) -> FiltrationTime {
