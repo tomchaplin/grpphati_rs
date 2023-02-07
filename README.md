@@ -11,22 +11,7 @@ This leads to considerable slow down when using `PHATBackend`.
 As such, the recommended usage is with `PersuitBackend`, available in `grpphati[persuit]`.
 Eirene has not been tested so far.
 It is also recommended to use the provided sparsifier.
-A good pipeline is
-
-```python
-from grpphati.filtrations import ShortestPathFiltration
-from grpphati_rs import RustRegularPathHomology, RustGeneratorSparsifier
-from grpphati.backends import PersuitBackend
-from grpphati.optimisations import all_optimisations
-
-GrPPH_rs = make_grounded_pipeline(
-    ShortestPathFiltration,
-    RustRegularPathHomology,
-    backend=PersuitBackend(sparsifier=RustGeneratorSparsifier(return_dimension=False)),
-    optimisation_strat=all_optimisations,
-)
-```
-
+Good pipelines are provided in `grpphati_rs.GrPPH_rs` and `grpphai_rs.GrPPH_par_wedge_rs`.
 
 ## Known issues
 
