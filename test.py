@@ -4,9 +4,9 @@ import networkx as nx
 import numpy as np
 from math import log
 from grpphati_rs import RustRegularPathHomology, RustGeneratorSparsifier
-from grpphati_rs.grpphati_rs import RustListSparsifier
+from grpphati_rs import GrPPH_par_wedge_rs, RustPreferredSparsifier
 from grpphati.homologies import RegularPathHomology
-from grpphati.backends import PHATBackend, PersuitBackend
+from grpphati.backends import PHATBackend, PersuitBackend, LoPHATBackend
 from grpphati.filtrations import ShortestPathFiltration
 from grpphati.homologies import Homology
 from grpphati.optimisations import component_appendage_empty
@@ -26,6 +26,12 @@ def _non_trivial_dict(sp_iter):
     }
 
 
+def custom_list_sparisfy(cols):
+    sparsifier = RustListSparsifier()
+    sparse_cols = sparsifier(cols)
+    return [col[1] for col in sparse_cols]
+
+
 # log_deltas = []
 #
 # N = 150
@@ -35,7 +41,7 @@ def _non_trivial_dict(sp_iter):
 # for i in range(N):
 #     G.add_edge(i, (i + 1) % N, weight=random.random())
 #
-best_pipeline = make_grounded_pipeline(
+persuit_pipeline = make_grounded_pipeline(
     ShortestPathFiltration,
     RustRegularPathHomology,
     backend=PersuitBackend(sparsifier=RustGeneratorSparsifier(return_dimension=False)),
@@ -48,17 +54,28 @@ old_pipeline = make_grounded_pipeline(
     backend=PersuitBackend(sparsifier=GeneratorSparsifier(return_dimension=False)),
     optimisation_strat=None,
 )
+new_pipeline = make_grounded_pipeline(
+    ShortestPathFiltration,
+    RustRegularPathHomology,
+    backend=LoPHATBackend(sparsifier=RustPreferredSparsifier(2)),
+    optimisation_strat=None,
+)
+
 from data.paul_analysis import assemble_dash_data
 
 tic0 = time.time()
-d2 = assemble_dash_data(data_root="./data/all", pipeline=old_pipeline)
+d0 = assemble_dash_data(data_root="./data/all", pipeline=persuit_pipeline)
 print("Done")
 tic1 = time.time()
-d0 = assemble_dash_data(data_root="./data/all", pipeline=best_pipeline)
+d1 = assemble_dash_data(data_root="./data/all", pipeline=old_pipeline)
 print("Done")
 tic2 = time.time()
+d2 = assemble_dash_data(data_root="./data/all", pipeline=new_pipeline)
+print("Done")
+tic3 = time.time()
 print(tic1 - tic0)
 print(tic2 - tic1)
+print(tic3 - tic2)
 
 # cells1 = RustRegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))
 # cells2 = RegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))

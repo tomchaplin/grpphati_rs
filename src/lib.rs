@@ -1,6 +1,7 @@
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
+    sync::Mutex,
 };
 
 use pyo3::prelude::*;
@@ -249,6 +250,59 @@ impl RustListSparsifier {
 }
 
 #[pyclass]
+struct RustParallelListSparsifier {
+    max_dim: usize,
+}
+
+#[pymethods]
+impl RustParallelListSparsifier {
+    #[new]
+    fn new(max_dim: usize) -> Self {
+        Self { max_dim }
+    }
+
+    fn __call__(&mut self, cols: Vec<GrpphatiRsColumn>) -> Vec<Vec<usize>> {
+        let mut sparse_cols: Vec<Mutex<Vec<usize>>> = Vec::with_capacity(cols.len());
+        // Build up output
+        for _ in 0..cols.len() {
+            sparse_cols.push(Mutex::new(vec![]));
+        }
+        let mut col2idx_map: HashMap<ColumnType, usize> = HashMap::new();
+        for working_dim in 0..=self.max_dim {
+            // Build boundaries
+            cols.iter()
+                .enumerate()
+                .par_bridge()
+                .filter(|(_col_idx, col)| col.dimension() == working_dim)
+                .for_each(|(col_idx, col)| {
+                    let bdry = col.boundary();
+                    let mut sparse_bdry = vec![];
+                    for row in bdry {
+                        let idx = col2idx_map.get(&row.col_type).unwrap();
+                        sparse_bdry.push(*idx);
+                    }
+                    sparse_bdry.sort();
+                    *sparse_cols[col_idx].lock().unwrap() = sparse_bdry;
+                });
+            // Insert into col2idx_map
+            if working_dim == self.max_dim {
+                continue;
+            }
+            cols.iter()
+                .enumerate()
+                .filter(|(_col_idx, col)| col.dimension() == working_dim)
+                .for_each(|(col_idx, col)| {
+                    col2idx_map.insert(col.col_type, col_idx);
+                })
+        }
+        sparse_cols
+            .into_iter()
+            .map(|outer| outer.into_inner().unwrap())
+            .collect()
+    }
+}
+
+#[pyclass]
 struct RustIteratorSparsifier {
     col2idx_map: HashMap<ColumnType, usize>,
     current_idx: usize,
@@ -438,6 +492,7 @@ fn grpphati_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_rph_two_cells, m)?)?;
     m.add_class::<GrpphatiRsColumn>()?;
     m.add_class::<RustListSparsifier>()?;
+    m.add_class::<RustParallelListSparsifier>()?;
     m.add_class::<RustIteratorSparsifier>()?;
     Ok(())
 }

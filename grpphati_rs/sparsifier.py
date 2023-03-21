@@ -1,4 +1,4 @@
-from grpphati_rs.grpphati_rs import RustIteratorSparsifier
+from grpphati_rs.grpphati_rs import RustIteratorSparsifier, RustParallelListSparsifier
 from grpphati.sparsifiers import Sparsifier
 
 
@@ -21,3 +21,12 @@ class RustGeneratorSparsifier(Sparsifier):
             return next_col
         else:
             return next_col[1]
+
+
+class RustPreferredSparsifier(Sparsifier):
+    def __init__(self, max_dim=2):
+        self.max_dim = max_dim
+
+    def __call__(self, cols):
+        sparsifier = RustParallelListSparsifier(self.max_dim)
+        return sparsifier(cols)
