@@ -63,18 +63,18 @@ new_pipeline = make_grounded_pipeline(
 
 from data.paul_analysis import assemble_dash_data
 
-tic0 = time.time()
-d0 = assemble_dash_data(data_root="./data/all", pipeline=persuit_pipeline)
-print("Done")
-tic1 = time.time()
-d1 = assemble_dash_data(data_root="./data/all", pipeline=old_pipeline)
-print("Done")
+# tic0 = time.time()
+# d0 = assemble_dash_data(data_root="./data/all", pipeline=persuit_pipeline)
+# print("Done")
+# tic1 = time.time()
+# d1 = assemble_dash_data(data_root="./data/all", pipeline=old_pipeline)
+# print("Done")
 tic2 = time.time()
 d2 = assemble_dash_data(data_root="./data/all", pipeline=new_pipeline)
 print("Done")
 tic3 = time.time()
-print(tic1 - tic0)
-print(tic2 - tic1)
+# print(tic1 - tic0)
+# print(tic2 - tic1)
 print(tic3 - tic2)
 
 # cells1 = RustRegularPathHomology.get_cells([0, 1, 2], ShortestPathFiltration(G))

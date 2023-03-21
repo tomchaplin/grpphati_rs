@@ -4,6 +4,7 @@ use std::{
     sync::Mutex,
 };
 
+use dashmap::DashMap;
 use pyo3::prelude::*;
 use rayon::{iter::IterBridge, prelude::*};
 
@@ -267,7 +268,7 @@ impl RustParallelListSparsifier {
         for _ in 0..cols.len() {
             sparse_cols.push(Mutex::new(vec![]));
         }
-        let mut col2idx_map: HashMap<ColumnType, usize> = HashMap::new();
+        let col2idx_map: DashMap<ColumnType, usize> = DashMap::new();
         for working_dim in 0..=self.max_dim {
             // Build boundaries
             cols.iter()
@@ -290,6 +291,7 @@ impl RustParallelListSparsifier {
             }
             cols.iter()
                 .enumerate()
+                .par_bridge()
                 .filter(|(_col_idx, col)| col.dimension() == working_dim)
                 .for_each(|(col_idx, col)| {
                     col2idx_map.insert(col.col_type, col_idx);
