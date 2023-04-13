@@ -10,5 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 dashmap = "5.4.0"
+itertools = "0.10.5"
 pyo3 = { version = "0.18.0", features = ["extension-module"] }
 rayon = "1.6.1"

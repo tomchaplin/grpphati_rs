@@ -1,5 +1,9 @@
 // Placeholder
 
+use std::collections::HashSet;
+
+use itertools::Itertools;
+
 use dashmap::DashMap;
 
 use crate::{
@@ -21,19 +25,40 @@ pub fn compute_map(
     domain_cells
         .par_iter()
         .map(|col| match col.col_type {
-            ColumnType::Triangle(_, _, _) => todo!(),
-            ColumnType::LongSquare(_, _, _) => todo!(),
+            ColumnType::Triangle(i, j, k) => {
+                let fi = *vertex_map.get(&i).unwrap().value();
+                let fj = *vertex_map.get(&j).unwrap().value();
+                let fk = *vertex_map.get(&k).unwrap().value();
+                let image_set = compute_two_path_image(&index, (fi, fj, fk));
+                image_set.into_iter().sorted().collect()
+            }
+            ColumnType::LongSquare(s, mids, t) => {
+                let fs = *vertex_map.get(&s).unwrap().value();
+                let fu = *vertex_map.get(&mids.0).unwrap().value();
+                let fv = *vertex_map.get(&mids.1).unwrap().value();
+                let ft = *vertex_map.get(&t).unwrap().value();
+                let path_1 = (fs, fu, ft);
+                let path_2 = (fs, fv, ft);
+                let im_1 = compute_two_path_image(&index, path_1);
+                let im_2 = compute_two_path_image(&index, path_2);
+                let final_im = im_1.symmetric_difference(&im_2);
+                final_im.into_iter().cloned().sorted().collect()
+            }
             ColumnType::DoubleEdge(i, j) => {
                 let fi = *vertex_map.get(&i).unwrap().value();
                 let fj = *vertex_map.get(&j).unwrap().value();
-                let im_idx = index.double_edges.get(&(fi, fj)).unwrap().value().clone();
-                vec![im_idx]
+                let image_set = compute_two_path_image(&index, (fi, fj, fi));
+                image_set.into_iter().sorted().collect()
             }
             ColumnType::Edge(i, j) => {
                 let fi = *vertex_map.get(&i).unwrap().value();
                 let fj = *vertex_map.get(&j).unwrap().value();
-                let im_idx = index.edges.get(&(fi, fj)).unwrap().value().clone();
-                vec![im_idx]
+                if fi == fj {
+                    vec![]
+                } else {
+                    let im_idx = index.edges.get(&(fi, fj)).unwrap().value().clone();
+                    vec![im_idx]
+                }
             }
             ColumnType::Node(i) => {
                 let fi = *vertex_map.get(&i).unwrap().value();
@@ -42,6 +67,53 @@ pub fn compute_map(
             }
         })
         .collect()
+}
+
+// Remember to sort output before returning vector
+fn compute_two_path_image(
+    index: &CodomainIndex,
+    image_path: (NodeIndex, NodeIndex, NodeIndex),
+) -> HashSet<usize> {
+    if image_path.0 == image_path.2 {
+        if image_path.0 == image_path.1 {
+            // Path is collapsed to nothing
+            return HashSet::default();
+        }
+        // Image is a double edge
+        let im_idx = index
+            .double_edges
+            .get(&(image_path.0, image_path.1))
+            .unwrap()
+            .value()
+            .clone();
+        return HashSet::from([im_idx]);
+    }
+    if image_path.0 == image_path.1 || image_path.1 == image_path.2 {
+        return HashSet::default();
+    }
+    // Image is a two-path with all distinct vertices
+    // Must be combination of long square and directed triangles
+    if index.triangles.contains_key(&image_path) {
+        let im_idx = index.triangles.get(&image_path).unwrap().value().clone();
+        return HashSet::from([im_idx]);
+    }
+    // Image must be contained in a long square
+    // We fetch the index of that long square and the index of the triangle corresponding
+    // to the other half of the long square
+    let ls_idx = index.long_squares.get(&image_path).unwrap().value().clone();
+    let base_node = index
+        .bases
+        .get(&(image_path.0, image_path.2))
+        .unwrap()
+        .value()
+        .clone();
+    let base_idx = index
+        .triangles
+        .get(&(image_path.0, base_node, image_path.2))
+        .unwrap()
+        .value()
+        .clone();
+    HashSet::from([ls_idx, base_idx])
 }
 
 #[derive(Default)]
@@ -53,8 +125,8 @@ struct CodomainIndex {
     double_edges: DashMap<(NodeIndex, NodeIndex), usize>,
     // For a pair (s, t) bases[(s, t)] is the starting midpoint of all long square
     bases: DashMap<(NodeIndex, NodeIndex), NodeIndex>,
-    // For a pair (s, t) long_squares[((s, t), m)] is the index of long square s -> t with midpoints (base[(s, t)], m)
-    long_squares: DashMap<((NodeIndex, NodeIndex), NodeIndex), usize>,
+    // For a pair (s, t) long_squares[(s, m, t)] is the index of long square smt - s(base)t
+    long_squares: DashMap<(NodeIndex, NodeIndex, NodeIndex), usize>,
     // Stores the index of a triangle a -> b -> c in triangles[(a,b,c)]
     triangles: DashMap<(NodeIndex, NodeIndex, NodeIndex), usize>,
 }
@@ -80,7 +152,7 @@ fn build_index(codomain_cells: &Vec<GrpphatiRsColumn>) -> CodomainIndex {
             }
             crate::columns::ColumnType::LongSquare(s, mid, t) => {
                 index.bases.insert((s, t), mid.0);
-                index.long_squares.insert(((s, t), mid.1), idx);
+                index.long_squares.insert((s, mid.1, t), idx);
             }
         });
     index
