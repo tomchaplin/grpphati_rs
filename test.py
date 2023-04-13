@@ -12,6 +12,7 @@ from grpphati.homologies import Homology
 from grpphati.optimisations import component_appendage_empty
 from grpphati.pipelines.grounded import GrPPH, make_grounded_pipeline
 from grpphati.sparsifiers import ListSparsifier, GeneratorSparsifier
+from grpphati.truncations import cone_time
 import phat
 
 
@@ -59,6 +60,7 @@ new_pipeline = make_grounded_pipeline(
     RustRegularPathHomology,
     backend=LoPHATBackend(sparsifier=RustPreferredSparsifier(2)),
     optimisation_strat=None,
+    truncation_strat=cone_time,
 )
 
 from data.paul_analysis import assemble_dash_data
