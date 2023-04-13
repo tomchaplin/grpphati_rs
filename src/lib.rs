@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
 
 mod columns;
+mod compute_mapping;
 mod homology;
 mod sparsifiers;
 
