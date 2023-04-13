@@ -262,11 +262,11 @@ impl RustParallelListSparsifier {
         Self { max_dim }
     }
 
-    fn __call__(&mut self, cols: Vec<GrpphatiRsColumn>) -> Vec<Vec<usize>> {
-        let mut sparse_cols: Vec<Mutex<Vec<usize>>> = Vec::with_capacity(cols.len());
+    fn __call__(&mut self, cols: Vec<GrpphatiRsColumn>) -> Vec<(usize, Vec<usize>)> {
+        let mut sparse_cols: Vec<Mutex<(usize, Vec<usize>)>> = Vec::with_capacity(cols.len());
         // Build up output
         for _ in 0..cols.len() {
-            sparse_cols.push(Mutex::new(vec![]));
+            sparse_cols.push(Mutex::new((0, vec![])));
         }
         let col2idx_map: DashMap<ColumnType, usize> = DashMap::new();
         for working_dim in 0..=self.max_dim {
@@ -283,7 +283,8 @@ impl RustParallelListSparsifier {
                         sparse_bdry.push(*idx);
                     }
                     sparse_bdry.sort();
-                    *sparse_cols[col_idx].lock().unwrap() = sparse_bdry;
+                    let dimension = col.dimension();
+                    *sparse_cols[col_idx].lock().unwrap() = (dimension, sparse_bdry);
                 });
             // Insert into col2idx_map
             if working_dim == self.max_dim {
