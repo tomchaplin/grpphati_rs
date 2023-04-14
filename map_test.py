@@ -63,7 +63,7 @@ G6 = nx.compose(G6_1, G6_2)
 # Convert to integer node labels for grpphati_rs compatability
 G6_1 = nx.convert_node_labels_to_integers(G6_1, label_attribute="original")
 G6 = nx.convert_node_labels_to_integers(G6, label_attribute="original")
-
+# Now that we have relabelled, the inclusion is non-trivial
 inclusion = RustRegularPathHomology.get_relabelled_inclusion(
     G6_1, G6, label_attribute="original"
 )
