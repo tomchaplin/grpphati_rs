@@ -1,10 +1,12 @@
 // Placeholder
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
 
 use dashmap::DashMap;
+
+use pyo3::prelude::*;
 
 use crate::{
     columns::{ColumnType, GrpphatiRsColumn},
@@ -13,9 +15,18 @@ use crate::{
 
 use rayon::prelude::*;
 
-type NodeMapping = DashMap<NodeIndex, NodeIndex>;
+type NodeMapping = HashMap<NodeIndex, NodeIndex>;
 
-#[allow(dead_code)]
+#[pyfunction]
+#[pyo3(name = "compute_rph_map")]
+pub fn compute_map_py(
+    domain_cells: Vec<GrpphatiRsColumn>,
+    codomain_cells: Vec<GrpphatiRsColumn>,
+    vertex_map: NodeMapping,
+) -> Vec<Vec<usize>> {
+    compute_map(&domain_cells, &codomain_cells, vertex_map)
+}
+
 pub fn compute_map(
     domain_cells: &Vec<GrpphatiRsColumn>,
     codomain_cells: &Vec<GrpphatiRsColumn>,
@@ -26,17 +37,17 @@ pub fn compute_map(
         .par_iter()
         .map(|col| match col.col_type {
             ColumnType::Triangle(i, j, k) => {
-                let fi = *vertex_map.get(&i).unwrap().value();
-                let fj = *vertex_map.get(&j).unwrap().value();
-                let fk = *vertex_map.get(&k).unwrap().value();
+                let fi = *vertex_map.get(&i).unwrap();
+                let fj = *vertex_map.get(&j).unwrap();
+                let fk = *vertex_map.get(&k).unwrap();
                 let image_set = compute_two_path_image(&index, (fi, fj, fk));
                 image_set.into_iter().sorted().collect()
             }
             ColumnType::LongSquare(s, mids, t) => {
-                let fs = *vertex_map.get(&s).unwrap().value();
-                let fu = *vertex_map.get(&mids.0).unwrap().value();
-                let fv = *vertex_map.get(&mids.1).unwrap().value();
-                let ft = *vertex_map.get(&t).unwrap().value();
+                let fs = *vertex_map.get(&s).unwrap();
+                let fu = *vertex_map.get(&mids.0).unwrap();
+                let fv = *vertex_map.get(&mids.1).unwrap();
+                let ft = *vertex_map.get(&t).unwrap();
                 let path_1 = (fs, fu, ft);
                 let path_2 = (fs, fv, ft);
                 let im_1 = compute_two_path_image(&index, path_1);
@@ -45,14 +56,14 @@ pub fn compute_map(
                 final_im.into_iter().cloned().sorted().collect()
             }
             ColumnType::DoubleEdge(i, j) => {
-                let fi = *vertex_map.get(&i).unwrap().value();
-                let fj = *vertex_map.get(&j).unwrap().value();
+                let fi = *vertex_map.get(&i).unwrap();
+                let fj = *vertex_map.get(&j).unwrap();
                 let image_set = compute_two_path_image(&index, (fi, fj, fi));
                 image_set.into_iter().sorted().collect()
             }
             ColumnType::Edge(i, j) => {
-                let fi = *vertex_map.get(&i).unwrap().value();
-                let fj = *vertex_map.get(&j).unwrap().value();
+                let fi = *vertex_map.get(&i).unwrap();
+                let fj = *vertex_map.get(&j).unwrap();
                 if fi == fj {
                     vec![]
                 } else {
@@ -61,7 +72,7 @@ pub fn compute_map(
                 }
             }
             ColumnType::Node(i) => {
-                let fi = *vertex_map.get(&i).unwrap().value();
+                let fi = *vertex_map.get(&i).unwrap();
                 let im_idx = index.nodes.get(&fi).unwrap().value().clone();
                 vec![im_idx]
             }
