@@ -24,9 +24,13 @@ class RustGeneratorSparsifier(Sparsifier):
 
 
 class RustPreferredSparsifier(Sparsifier):
-    def __init__(self, max_dim=2):
+    def __init__(self, max_dim=2, return_dimension=True):
         self.max_dim = max_dim
+        self.return_dimension = return_dimension
 
     def __call__(self, cols):
         sparsifier = RustParallelListSparsifier(self.max_dim)
-        return sparsifier(cols)
+        if self.return_dimension:
+            return sparsifier(cols)
+        else:
+            return [bdry for (dim, bdry) in sparsifier(cols)]

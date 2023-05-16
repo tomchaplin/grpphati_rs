@@ -55,6 +55,27 @@ pub fn get_rph_two_cells(edge_map: EdgeMap) -> Vec<GrpphatiRsColumn> {
     two_path_fold.cols
 }
 
+#[pyfunction]
+pub fn get_dflag_two_cells(edge_map: EdgeMap) -> Vec<GrpphatiRsColumn> {
+    let two_path_iter = enumerate_two_paths(&edge_map);
+    two_path_iter
+        .filter_map(|(path, path_time)| {
+            if path.0 == path.2 {
+                return None;
+            }
+            let ac_time = edge_time(&edge_map, (&path.0, &path.2));
+            let entrance_time = path_time.max(ac_time);
+            if entrance_time.is_infinite() {
+                return None;
+            }
+            Some(GrpphatiRsColumn {
+                col_type: ColumnType::Triangle(path.0, path.1, path.2),
+                entrance_time: Some(entrance_time),
+            })
+        })
+        .collect()
+}
+
 fn enumerate_two_paths<'a>(
     edge_map: &'a EdgeMap,
 ) -> IterBridge<impl Iterator<Item = UnstructuredTwoPathWithTime> + Send + 'a> {

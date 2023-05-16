@@ -7,7 +7,7 @@ mod sparsifiers;
 
 use columns::GrpphatiRsColumn;
 use compute_mapping::compute_map_py;
-use homology::get_rph_two_cells;
+use homology::{get_dflag_two_cells, get_rph_two_cells};
 use sparsifiers::{RustIteratorSparsifier, RustListSparsifier, RustParallelListSparsifier};
 
 type NodeIndex = u32;
@@ -21,6 +21,7 @@ type FiltrationTime = f64;
 #[pymodule]
 fn grpphati_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_rph_two_cells, m)?)?;
+    m.add_function(wrap_pyfunction!(get_dflag_two_cells, m)?)?;
     m.add_function(wrap_pyfunction!(compute_map_py, m)?)?;
     m.add_class::<GrpphatiRsColumn>()?;
     m.add_class::<RustListSparsifier>()?;
