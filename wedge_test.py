@@ -3,21 +3,30 @@ import random
 import networkx as nx
 import numpy as np
 from math import log
-from grpphati_rs import (
-    RustRegularPathHomology,
-    RustGeneratorSparsifier,
-    GrPPH_par_wedge_rs,
-    GrPPH_rs,
-)
-from grpphati_rs.grpphati_rs import RustListSparsifier
-from grpphati.homologies import RegularPathHomology
-from grpphati.backends import PHATBackend, PersuitBackend
-from grpphati.filtrations import ShortestPathFiltration
-from grpphati.homologies import Homology
-from grpphati.optimisations import component_appendage_empty
-from grpphati.pipelines.grounded import GrPPH, make_grounded_pipeline
-from grpphati.sparsifiers import ListSparsifier, GeneratorSparsifier
+
+# from grpphati.homologies import RegularPathHomology
+# from grpphati.backends import PHATBackend, PersuitBackend
+# from grpphati.filtrations import ShortestPathFiltration
+# from grpphati.homologies import Homology
+# from grpphati.optimisations import component_appendage_empty
+# from grpphati.pipelines.grounded import GrPPH, make_grounded_pipeline
+# from grpphati.sparsifiers import ListSparsifier, GeneratorSparsifier
 from joblib import Parallel, delayed
+
+from grpphati_rs import RustRegularPathHomology, RustPreferredSparsifier
+from grpphati.filtrations import ShortestPathFiltration
+from grpphati.optimisations import component_appendage_empty, all_optimisations
+from grpphati.backends import LoPHATBackend
+from grpphati.pipelines.grounded import GrPPH, make_grounded_pipeline
+from grpphati.truncations import cone_time
+
+GrPPH_rs = make_grounded_pipeline(
+    ShortestPathFiltration,
+    RustRegularPathHomology,
+    backend=LoPHATBackend(sparsifier=RustPreferredSparsifier(2), with_reps=False),
+    optimisation_strat=component_appendage_empty,
+    truncation_strat=cone_time,
+)
 
 
 def do_job():

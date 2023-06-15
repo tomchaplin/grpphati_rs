@@ -11,7 +11,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-    "grpphati[persuit,lophat] @ git+https://github.com/tomchaplin/grpphati.git"
+    "grpphati==0.4.0"
 ]
 
 
