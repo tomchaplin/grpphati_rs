@@ -10,7 +10,7 @@ Sparsifies columns of each dimension in parallel.
 
 Note `RustRegularPathHomology` does not produce columns in the same order as `RegularPathHomology`.
 This leads to considerable slow down when using `PHATBackend`.
-As such, the recommended usage is with `LoPHATBackend`, available in `grpphati[lophat]`.
+As such, the recommended usage is with `LoPHATBackend`, available in `grpphati`.
 Eirene has not been tested so far.
 It is also recommended to use the provided parallel sparsifier.
 Good pipelines are provided in `grpphati_rs.GrPPH_rs` and `grpphai_rs.GrPPH_par_wedge_rs`.
