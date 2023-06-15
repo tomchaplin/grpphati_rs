@@ -15,6 +15,8 @@ Eirene has not been tested so far.
 It is also recommended to use the provided parallel sparsifier.
 Good pipelines are provided in `grpphati_rs.GrPPH_rs` and `grpphai_rs.GrPPH_par_wedge_rs`.
 
+For example usage, please consult `examples/wedge.py` in the repository.
+
 ## Known issues
 
 - Graphs used with `RustRegularPathHomology` must be integer indexed.
