@@ -20,5 +20,3 @@ For example usage, please consult `examples/disjoint.py` in the repository.
 ## Known issues
 
 - Graphs used with `RustRegularPathHomology` must be integer indexed.
-- Currently slower than GrPPHATI default implementation when using PHAT.
-This is not due to PyO3 overhead but instead the cells are not produced in the best order for the persistence calculation.
