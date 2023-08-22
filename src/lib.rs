@@ -1,5 +1,5 @@
 use lophat::{
-    algorithms::{RVDecomposition, SerialAlgorithm},
+    algorithms::{LockFreeAlgorithm, RVDecomposition},
     columns::VecColumn,
     options::LoPhatOptions,
     utils::{anti_transpose, PersistenceDiagram},
@@ -29,7 +29,7 @@ pub fn sparsify_and_decompose(cols: Vec<GrpphatiRsColumn>) -> PersistenceDiagram
     println!("Anti-transposed");
     let mut options = LoPhatOptions::default();
     options.min_chunk_len = 10000;
-    let decomp = SerialAlgorithm::decompose(at.into_iter(), Some(options));
+    let decomp = LockFreeAlgorithm::decompose(at.into_iter(), Some(options));
     println!("Decomposed");
     let diagram = decomp.diagram();
     println!("Got diagram");
