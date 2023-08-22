@@ -40,14 +40,11 @@ pub struct RustParallelListSparsifier {
     max_dim: usize,
 }
 
-#[pymethods]
 impl RustParallelListSparsifier {
-    #[new]
-    fn new(max_dim: usize) -> Self {
-        Self { max_dim }
-    }
-
-    fn __call__(&mut self, cols: Vec<GrpphatiRsColumn>) -> Vec<(usize, Vec<usize>)> {
+    pub fn sparsify(
+        &mut self,
+        cols: &Vec<GrpphatiRsColumn>,
+    ) -> impl Iterator<Item = (usize, Vec<usize>)> {
         let mut sparse_cols: Vec<Mutex<(usize, Vec<usize>)>> = Vec::with_capacity(cols.len());
         // Build up output
         for _ in 0..cols.len() {
@@ -86,7 +83,19 @@ impl RustParallelListSparsifier {
         sparse_cols
             .into_iter()
             .map(|outer| outer.into_inner().unwrap())
-            .collect()
+    }
+}
+
+#[pymethods]
+impl RustParallelListSparsifier {
+    #[new]
+    pub fn new(max_dim: usize) -> Self {
+        Self { max_dim }
+    }
+
+    fn __call__(&mut self, cols: Vec<GrpphatiRsColumn>) -> Vec<(usize, Vec<usize>)> {
+        println!("Sparsified");
+        self.sparsify(&cols).collect()
     }
 }
 

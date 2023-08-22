@@ -2,7 +2,7 @@ use pyo3::prelude::*;
 
 use rayon::{iter::IterBridge, prelude::*};
 
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use crate::{
     columns::{ColumnType, GrpphatiRsColumn},
@@ -32,6 +32,17 @@ struct TwoPathFold {
     bridges: HashMap<(NodeIndex, NodeIndex), Vec<(NodeIndex, FiltrationTime)>>,
 }
 
+fn compare_columns(col_a: &GrpphatiRsColumn, col_b: &GrpphatiRsColumn) -> Ordering {
+    let t_a = col_a
+        .entrance_time
+        .expect("Produced columns should have an entrance time");
+    let t_b = col_b
+        .entrance_time
+        .expect("Produced columns should have an entrance time");
+    t_a.partial_cmp(&t_b)
+        .expect("Neither filtration time should be NaN")
+}
+
 /// Formats the sum of two numbers as string.
 #[pyfunction]
 pub fn get_rph_two_cells(edge_map: EdgeMap) -> Vec<GrpphatiRsColumn> {
@@ -51,14 +62,16 @@ pub fn get_rph_two_cells(edge_map: EdgeMap) -> Vec<GrpphatiRsColumn> {
     let triangle_cols: Vec<_> = triangle_cols.into_iter().flatten().collect();
     two_path_fold.cols.extend(triangle_cols);
     two_path_fold.cols.extend(long_square_cols);
-    println!("Computed cells");
+    println!("Computed 2-cells");
+    two_path_fold.cols.sort_unstable_by(compare_columns);
+    println!("Sorted 2-cells");
     two_path_fold.cols
 }
 
 #[pyfunction]
 pub fn get_dflag_two_cells(edge_map: EdgeMap) -> Vec<GrpphatiRsColumn> {
     let two_path_iter = enumerate_two_paths(&edge_map);
-    two_path_iter
+    let mut cols: Vec<_> = two_path_iter
         .filter_map(|(path, path_time)| {
             if path.0 == path.2 {
                 return None;
@@ -73,7 +86,9 @@ pub fn get_dflag_two_cells(edge_map: EdgeMap) -> Vec<GrpphatiRsColumn> {
                 entrance_time: Some(entrance_time),
             })
         })
-        .collect()
+        .collect();
+    cols.sort_unstable_by(compare_columns);
+    cols
 }
 
 fn enumerate_two_paths<'a>(
