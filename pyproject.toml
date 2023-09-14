@@ -11,7 +11,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-    "grpphati==0.4.0"
+    "grpphati==0.4.1"
 ]
 
 
